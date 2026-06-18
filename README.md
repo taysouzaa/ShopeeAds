@@ -1,8 +1,8 @@
 # ShopeeAds
 
-> Landing page privada para captação e qualificação de leads para o treinamento de Shopee Ads — tráfego pago.
+> Landing page para captação e qualificação de leads para o treinamento de Shopee Ads — tráfego pago.
 
-![Status](https://img.shields.io/badge/status-projeto%20privado-8b0000)
+![Status](https://img.shields.io/badge/status-p%C3%BAblico-1a7f37)
 ![Frontend](https://img.shields.io/badge/frontend-HTML%2FCSS%2FJS-1f6feb)
 ![Automação](https://img.shields.io/badge/automacao-n8n%20Webhook-0f766e)
 ![Deploy](https://img.shields.io/badge/deploy-HostGator%2FcPanel-7c3aed)
