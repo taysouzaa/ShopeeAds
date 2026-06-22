@@ -149,6 +149,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       --green:   #58de56;
       --green2:  #41c63f;
       --green3:  #8bf286;
+      --shopee:  #EE4D2D;
+      --shopee2: #FF6633;
       --white:   #fdfdfd;
       --light:   #f0f4f9;
       --text-d:  #182332;
@@ -341,6 +343,89 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       text-shadow: 0 10px 28px rgba(0,0,0,.34);
     }
     .hero h1 .gn { color: var(--green); }
+    .hero h1 .so { color: var(--shopee); text-shadow: 0 0 32px rgba(238,77,45,.28); }
+
+    /* ── Shopee platform badge ── */
+    .shopee-platform-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: #ff8060;
+      font-size: .72rem; font-weight: 700; letter-spacing: .11em; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .shopee-platform-badge .shopee-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px;
+    }
+    .shopee-platform-badge .shopee-icon svg { width: 18px; height: 18px; }
+
+    /* ── Shopee ghost (decoração de fundo) ── */
+    .shopee-ghost {
+      position: absolute;
+      width: clamp(220px, 30vw, 420px);
+      height: auto;
+      opacity: 0.06;
+      pointer-events: none;
+      user-select: none;
+      z-index: 1;
+      border-radius: 22%;
+      filter: saturate(.5);
+    }
+    .shopee-ghost--tr { top: 50%; right: -4%; transform: translateY(-50%); }
+    .shopee-ghost--bl { bottom: -8%; left: -4%; opacity: 0.05; }
+    .shopee-ghost--br { bottom: -10%; right: 2%; opacity: 0.05; width: clamp(180px, 22vw, 340px); }
+
+    /* ── Shopee marquee ── */
+    .shopee-marquee {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      opacity: .22;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0%, black 10%, black 90%, transparent 100%);
+    }
+    .shopee-marquee-row {
+      display: flex;
+      gap: 44px;
+      width: max-content;
+      will-change: transform;
+      animation: shopeeSlide 22s linear infinite;
+    }
+    .shopee-marquee-row img {
+      width: 54px; height: 54px;
+      flex-shrink: 0;
+      border-radius: 13px;
+      display: block;
+    }
+    @keyframes shopeeSlide {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── Shopee chip (inline, pequeno) ── */
+    .shopee-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px 3px 6px; border-radius: 999px;
+      background: rgba(238,77,45,.09); border: 1px solid rgba(238,77,45,.22);
+      font-size: .63rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: rgba(238,77,45,.88); white-space: nowrap; vertical-align: middle;
+    }
+    .shopee-chip img { width: 13px; height: 13px; flex-shrink: 0; border-radius: 3px; }
+    .shopee-platform-badge img { border-radius: 5px; }
+    .sec-label-row {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .sec-label-row .sec-label { margin-bottom: 0; }
+    /* chip no dark (seções escuras) */
+    .dark-chip {
+      background: rgba(238,77,45,.12); border-color: rgba(238,77,45,.28);
+      color: rgba(255,150,120,.9);
+    }
     .hero-sub {
       font-size: 1rem; font-weight: 300; line-height: 1.8;
       color: rgba(231,235,241,.84); max-width: 640px; margin: 0 auto 26px; text-align: center;
@@ -1378,11 +1463,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="wrap">
     <div class="hero-content">
       <div class="reveal">
+        <div class="shopee-platform-badge">
+          Shopee Ads
+        </div>
         <div class="hero-badge">
           <span class="hero-badge-dot" aria-hidden="true"></span>
           Método P4 &bull; <strong>Acesso Imediato</strong>
         </div>
-        <h1>Aprenda a usar o <span class="gn">Shopee Ads</span><br>para vender mais</h1>
+        <h1>Aprenda a usar o <span class="so">Shopee Ads</span><br>para vender mais</h1>
         <p class="hero-sub">
           Entenda como a plataforma funciona, quais métricas analisar e como configurar campanhas de forma estratégica para tomar decisões melhores e vender mais.
         </p>
@@ -1501,9 +1589,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
           <div class="pillar-grid" aria-label="Pilares do Método P4">
             <div class="pillar-pill"><i class="fas fa-box" aria-hidden="true"></i>Produto</div>
+            <div class="pillar-pill"><i class="fas fa-tag" aria-hidden="true"></i>Preço</div>
             <div class="pillar-pill"><i class="fas fa-store" aria-hidden="true"></i>Plataforma</div>
             <div class="pillar-pill"><i class="fas fa-chart-line" aria-hidden="true"></i>Performance</div>
-            <div class="pillar-pill"><i class="fas fa-cogs" aria-hidden="true"></i>Processos</div>
           </div>
 
           <button class="btn-green" onclick="openModal(event)">
@@ -1606,6 +1694,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- ═══ ACESSO AO TREINAMENTO ═══ -->
 <section class="acesso-sec" id="acesso">
+  <div class="shopee-marquee" aria-hidden="true"></div>
   <div class="wrap">
     <div class="acesso-grid">
 
@@ -1815,7 +1904,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="foot-logo">
             <img class="brand-icon" src="assets/logo-p4-footer.webp" alt="Método P4" width="520" height="519" loading="lazy" decoding="async">
           </div>
-          <p class="foot-tag">Treinamento de Shopee Ads</p>
+          <p class="foot-tag">
+            <img src="assets/shopee.png" alt="" width="13" height="13" aria-hidden="true" style="vertical-align:middle;margin-right:5px;opacity:.65;display:inline;">Treinamento de Shopee Ads
+          </p>
           <nav class="foot-social" aria-label="Redes sociais">
             <a href="https://www.instagram.com/metodop4/" target="_blank" rel="noopener noreferrer" aria-label="Instagram do Método P4"><i class="fab fa-instagram" aria-hidden="true"></i></a>
             <a href="https://www.linkedin.com/company/m%C3%A9todo-p4/posts/?feedView=all" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn do Método P4"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a>
@@ -2114,6 +2205,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         frame.style.display = 'block';
       });
     }
+  })();
+
+  /* ── Shopee marquee builder ── */
+  (function() {
+    var LOGO   = 'assets/shopee.png';
+    var PER    = 18;
+    var SPEEDS = [22, 30, 19, 26, 21, 28, 20, 25, 23, 27];
+
+    document.querySelectorAll('.shopee-marquee').forEach(function(marquee) {
+      var section = marquee.closest('section');
+      var h = section ? section.offsetHeight : 700;
+      var rowH = 54 + 20;
+      var rows = Math.max(6, Math.ceil(h / rowH) + 1);
+
+      for (var i = 0; i < rows; i++) {
+        var row = document.createElement('div');
+        row.className = 'shopee-marquee-row';
+        var dur = SPEEDS[i % SPEEDS.length];
+        row.style.cssText = 'animation-duration:' + dur + 's;' +
+          (i % 2 === 1 ? 'animation-direction:reverse;' : '');
+        var html = '';
+        for (var j = 0; j < PER * 2; j++) {
+          html += '<img src="' + LOGO + '" alt="" loading="lazy">';
+        }
+        row.innerHTML = html;
+        marquee.appendChild(row);
+      }
+    });
   })();
 
   /* ── Footer year ── */
