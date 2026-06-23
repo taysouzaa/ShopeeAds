@@ -2616,6 +2616,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 
         <div class="fld">
+          <label class="fld-label" for="f-email">E-mail <span class="req">*</span></label>
+          <input class="fld-input" type="email" id="f-email" name="email" placeholder="Ex: maria@empresa.com" autocomplete="email" inputmode="email" required>
+          <span class="fld-err" id="err-email" role="alert"><i class="fas fa-exclamation-circle" aria-hidden="true"></i> Por favor, informe um e-mail válido.</span>
+        </div>
+
+        <div class="fld">
           <label class="fld-label" for="f-wpp">WhatsApp <span class="req">*</span></label>
           <input class="fld-input" type="tel" id="f-wpp" name="whatsapp" placeholder="+55 11 98888-7777" autocomplete="tel" inputmode="tel" required>
           <span class="fld-err" id="err-wpp" role="alert"><i class="fas fa-exclamation-circle" aria-hidden="true"></i> Por favor, informe um WhatsApp válido.</span>
@@ -2796,14 +2802,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     var hp = document.getElementById('f-hp');
     if (hp && hp.value !== '') return false;
 
-    var ok   = true;
-    var nome = document.getElementById('f-nome').value.trim();
-    var wpp  = document.getElementById('f-wpp').value.replace(/\D/g,'');
-    var wpp2 = document.getElementById('f-wpp2').value.replace(/\D/g,'');
-    var fat  = document.getElementById('f-fat');
-    var inv  = document.getElementById('f-inv');
+    var ok    = true;
+    var nome  = document.getElementById('f-nome').value.trim();
+    var email = document.getElementById('f-email').value.trim();
+    var wpp   = document.getElementById('f-wpp').value.replace(/\D/g,'');
+    var wpp2  = document.getElementById('f-wpp2').value.replace(/\D/g,'');
+    var fat   = document.getElementById('f-fat');
+    var inv   = document.getElementById('f-inv');
+    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 
     if (nome.length < 3)                  { setErr('f-nome','err-nome',true);  ok=false; } else setErr('f-nome','err-nome',false);
+    if (!emailOk)                         { setErr('f-email','err-email',true); ok=false; } else setErr('f-email','err-email',false);
     if (wpp.length < 12)                  { setErr('f-wpp','err-wpp',true);   ok=false; } else setErr('f-wpp','err-wpp',false);
     if (wpp2.length < 12 || wpp !== wpp2) { setErr('f-wpp2','err-wpp2',true); ok=false; } else setErr('f-wpp2','err-wpp2',false);
     if (!fat || !fat.value)               { setErr('f-fat','err-fat',true);   ok=false; } else setErr('f-fat','err-fat',false);
@@ -2823,34 +2832,50 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     var phone = normalizeCheckoutPhone(payload.whatsapp);
 
     if (payload.nome) {
+      url.searchParams.set('fn', payload.nome);
       url.searchParams.set('name', payload.nome);
       url.searchParams.set('nome', payload.nome);
     }
+    if (payload.email) {
+      url.searchParams.set('em', payload.email);
+      url.searchParams.set('email', payload.email);
+    }
     if (phone) {
+      url.searchParams.set('ph', phone);
       url.searchParams.set('cellphone', phone);
       url.searchParams.set('telefone', phone);
+    }
+    if (payload.nome || payload.email || phone) {
+      url.searchParams.set('force', 'true');
     }
 
     appendTrackedParams(url);
     return url.toString();
   }
 
-  function dispatchLead(url, body) {
-    if (!url) return;
+  function dispatchLead(url, body, timeoutMs) {
+    if (!url) return Promise.resolve({ skipped: true });
 
-    try {
-      if (navigator.sendBeacon) {
-        var blob = new Blob([body], { type: 'application/json' });
-        if (navigator.sendBeacon(url, blob)) return;
-      }
-    } catch (err) {}
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = setTimeout(function() {
+      if (controller) controller.abort();
+    }, timeoutMs || 2500);
 
-    fetch(url, {
+    return fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: body,
-      keepalive: true
-    }).catch(function(){});
+      keepalive: true,
+      mode: 'cors',
+      signal: controller ? controller.signal : undefined
+    }).then(function(response) {
+      return { ok: response.ok, status: response.status };
+    }).catch(function(error) {
+      console.warn('Webhook dispatch failed:', url, error);
+      return { ok: false, error: error };
+    }).finally(function() {
+      clearTimeout(timer);
+    });
   }
 
   /* ── Form submit ── */
@@ -2869,6 +2894,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     var payload = Object.assign({
       nome:                 document.getElementById('f-nome').value.trim(),
+      email:                document.getElementById('f-email').value.trim(),
       whatsapp:             document.getElementById('f-wpp').value.trim(),
       whatsapp_confirmacao: document.getElementById('f-wpp2').value.trim(),
       faturamento:          fatEl ? fatEl.value : '',
@@ -2890,6 +2916,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     window.dataLayer.push({
       event:              mqlTag,
       lead_nome:          payload.nome,
+      lead_email:         payload.email,
       lead_whatsapp:      payload.whatsapp,
       browser_user_agent: navigator.userAgent,
       browser_language:   navigator.language,
@@ -2897,14 +2924,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       viewport:           window.innerWidth + 'x' + window.innerHeight
     });
 
-    dispatchLead(WEBHOOK_URL, webhookBody);
-    dispatchLead(WEBHOOK_URL2, webhookBody);
+    await Promise.allSettled([
+      dispatchLead(WEBHOOK_URL, webhookBody, 2500),
+      dispatchLead(WEBHOOK_URL2, webhookBody, 2500)
+    ]);
 
     btn.textContent = 'REDIRECIONANDO…';
     window.location.assign(buildCheckoutUrl(payload));
   }
 
-  ['f-nome','f-wpp','f-wpp2'].forEach(function(id) {
+  ['f-nome','f-email','f-wpp','f-wpp2'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('input', function() { this.classList.remove('error'); });
   });
