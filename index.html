@@ -43,7 +43,7 @@
   <script>
     (function captureAndCleanTracking() {
       var keys = ['utm_source','utm_medium','utm_campaign','utm_content','utm_term','utm_id','channel','canal'];
-      var carriedKeys = ['src', 'sck', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'a_id'];
+      var carriedKeys = ['src', 'sck', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'a_id', 'fbclid'];
       var initialUrl = window.location.href;
       var p = new URLSearchParams(window.location.search);
       window.__leadLinkParams = {};
@@ -62,6 +62,7 @@
         utm_term: p.get('utm_term') || '',
         utm_id: p.get('utm_id') || '',
         a_id: p.get('a_id') || '',
+        fbclid: p.get('fbclid') || '',
         referrer: document.referrer || '',
         page_url: initialUrl,
         timestamp: new Date().toISOString()
@@ -2682,8 +2683,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   /* ── Webhooks ── */
   var WEBHOOK_URL  = 'https://ecomidia-n8n.misrsj.easypanel.host/webhook/p4-consultoria';
   var WEBHOOK_URL2 = 'https://n8n.srv1095468.hstgr.cloud/webhook/lead-ShopeeAds';
-  var CHECKOUT_URL = 'https://payfast.greenn.com.br/hv6p487/offer/X6DnZF';
-  var LINK_PARAM_FIELDS = ['src', 'sck', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'a_id'];
+  // ATENÇÃO: este secret fica embutido no JS público — não é autenticação real,
+  // apenas eleva a régua contra abuso casual (quem inspecionar o código-fonte
+  // consegue ler o valor, assim como lia a própria URL do webhook antes desta
+  // correção). Para controle de acesso de verdade seria preciso um proxy
+  // server-side guardando o secret fora do cliente. — taynara.souza
+  var WEBHOOK_SECRET = '8dabc33f807e2920f1833ed653f5930a66b949c71177044f'; // header auth do webhook n8n (lead-ShopeeAds)
+  var CHECKOUT_URL = 'https://payfast.greenn.com.br/redirect/294785';
+  var LINK_PARAM_FIELDS = ['src', 'sck', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'utm_id', 'a_id', 'fbclid'];
 
   /* ── UTM capture ── */
   var tracking = (function() {
@@ -2699,6 +2706,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       utm_term:     t.utm_term     || '',
       utm_id:       t.utm_id       || '',
       a_id:         t.a_id         || '',
+      fbclid:       t.fbclid       || '',
       referrer:     t.referrer     || document.referrer || '',
       page_url:     t.page_url     || window.location.href,
       timestamp:    t.timestamp    || new Date().toISOString()
@@ -2855,11 +2863,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       url.searchParams.set('force', 'true');
     }
 
+    var fbclid = tracking.fbclid || linkParams.fbclid || new URLSearchParams(window.location.search).get('fbclid');
+    if (fbclid) url.searchParams.set('fbclid', fbclid);
+
     appendTrackedParams(url);
     return url.toString();
   }
 
-  function dispatchLead(url, body, timeoutMs) {
+  function dispatchLead(url, body, timeoutMs, extraHeaders) {
     if (!url) return Promise.resolve({ skipped: true });
 
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -2869,7 +2880,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     return fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders || {}),
       body: body,
       keepalive: true,
       mode: 'cors',
@@ -2882,6 +2893,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }).finally(function() {
       clearTimeout(timer);
     });
+  }
+
+  // Evita Formula/CSV Injection: campos de texto livre (incluindo UTMs, que também
+  // vêm da URL e podem ser manipulados) não podem virar fórmulas executáveis
+  // quando o lead cai na planilha (Google Sheets/Excel).
+  function sanitizeForSheets(value) {
+    var risky = /^[=+\-@\t\r]/;
+    if (typeof value === 'string') return risky.test(value) ? "'" + value : value;
+    if (Array.isArray(value)) return value.map(sanitizeForSheets);
+    if (value && typeof value === 'object') {
+      var out = {};
+      Object.keys(value).forEach(function(k) { out[k] = sanitizeForSheets(value[k]); });
+      return out;
+    }
+    return value;
   }
 
   /* ── Form submit ── */
@@ -2916,7 +2942,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       mql: qualified ? 'sim' : 'não',
       tracking: Object.assign({}, tracking)
     }, payload);
-    var webhookBody = JSON.stringify(webhookPayload);
+    var webhookBody = JSON.stringify(sanitizeForSheets(webhookPayload));
 
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
@@ -2932,7 +2958,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     await Promise.allSettled([
       dispatchLead(WEBHOOK_URL, webhookBody, 2500),
-      dispatchLead(WEBHOOK_URL2, webhookBody, 2500)
+      dispatchLead(WEBHOOK_URL2, webhookBody, 2500, { 'x-p4-webhook-secret': WEBHOOK_SECRET })
     ]);
 
     btn.textContent = 'REDIRECIONANDO…';
